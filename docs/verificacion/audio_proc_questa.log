@@ -1,0 +1,43 @@
+# ** Note: (vsim-220) '/home/lelito/altera_lite/25.1std/questa_fse/linux_x86_64/../modelsim.ini' is used as the ini file.
+# vsim -c -l resultados_tb_questa.log work.tb_audio_proc 
+# Start time: 16:10:10 on Nov 26,2026
+# ** Note: (vsim-3812) Design is being optimized...
+# ** Note: (vopt-220) '/home/lelito/altera_lite/25.1std/questa_fse/linux_x86_64/../modelsim.ini' is used as the ini file.
+# //  Questa Altera Starter FPGA Edition-64
+# //  Version 2025.2 linux_x86_64 May 31 2025
+# //
+# // Unpublished work. Copyright 2025 Siemens
+# //
+# // This material contains trade secrets or otherwise confidential information
+# // owned by Siemens Industry Software Inc. or its affiliates (collectively,
+# // "SISW"), or its licensors. Access to and use of this information is strictly
+# // limited as set forth in the Customer's applicable agreements with SISW.
+# //
+# // This material may not be copied, distributed, or otherwise disclosed outside
+# // of the Customer's facilities without the express written permission of SISW,
+# // and may not be used in any way not expressly authorized by SISW.
+# //
+# Loading work.tb_audio_proc(fast)
+# === tb_audio_proc: FIFO_DEPTH=64 FS_HZ=8 N=1024 ===
+# -- registros
+# -- FIFO llena y OVERFLOW
+# -- pista en HEX5..HEX4 y HEX_EN
+# -- seleccion de filtro por switches
+# -- casos de filtrado
+# caso 0: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 1: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 2: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 3: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 4: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 5: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 6: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# caso 7: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# -- programacion de coeficientes (banco 3)
+# caso 8: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+# -- ciclos con las FIFOs del Audio Core llenas (contrapresion ejercitada): 1507772
+# === RESUMEN: 90 verificaciones, 0 fallas, 0 errores de protocolo Avalon-MM del maestro ===
+# RESULTADO: PASS
+# ** Note: $finish    : tb_audio_proc.v(310)
+#    Time: 54542030 ns  Iteration: 1  Instance: /tb_audio_proc
+# End time: 16:10:23 on Nov 26,2026, Elapsed time: 0:00:13
+# Errors: 0, Warnings: 0
