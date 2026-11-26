@@ -1,21 +1,16 @@
 ## Resumen
-Explique brevemente el propósito de este PR.
+- ¿Qué cambia este PR?
 
-## Requerimiento relacionado
-- Epic:
-- Feature:
-- User Story / Work Item:
+## Issue relacionado
+- Closes #<numero>   <!-- o Refs #<numero> si aun no se cierra -->
 
-## Cambios realizados
-- 
-- 
-- 
+## Pruebas y evidencia
+- [ ] Compilación / simulación / ejecución relevante
+- [ ] Criterios de aceptación verificados
+- [ ] Evidencia adjunta o enlazada
 
-## Evidencia / pruebas
-Describa cómo validó el cambio o adjunte evidencia.
-
-## Checklist
-- [ ] El cambio fue probado
-- [ ] La documentación fue actualizada si aplica
-- [ ] No se incluyen secretos ni credenciales
-- [ ] El PR está listo para revisión
+## Revisión técnica
+- [ ] Sin uso de alt_* fuera de interrupciones
+- [ ] Sin IOWR/IORD en Nios V, si corresponde
+- [ ] Documentación e interfaces actualizadas
+- [ ] Revisado por otra persona
