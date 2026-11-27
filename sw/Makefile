@@ -1,7 +1,7 @@
 CC      ?= gcc
 CFLAGS  ?= -std=c11 -O2 -Wall -Wextra -Werror -D_DEFAULT_SOURCE
 BUILD   := build
-LIB_SRC := src/wav.c src/catalog.c src/resampler.c
+LIB_SRC := src/wav.c src/catalog.c src/resampler.c src/mailbox.c src/player.c
 HDRS    := $(wildcard src/*.h)
 
 .PHONY: all test clean
