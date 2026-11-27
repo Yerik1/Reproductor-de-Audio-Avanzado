@@ -1,11 +1,14 @@
-/* Pruebas unitarias en PC de wav, catalog y resampler. */
+/* Pruebas unitarias en PC de wav, catalog, resampler, mailbox y player. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "audio_proc_regs.h"
 #include "catalog.h"
+#include "mailbox.h"
+#include "player.h"
 #include "resampler.h"
 #include "wav.h"
 
@@ -277,6 +280,208 @@ static void test_resampler(void)
     CHECK(ok && na >= 3 * (RS_N - 2));
 }
 
+/* ------------------------------------------------------------ mailbox */
+static void test_mailbox(void)
+{
+    static mailbox_t mb;
+    volatile mailbox_t *m = &mb;
+    mbx_status_t st, rd;
+    uint32_t c, seq, i;
+    int ok;
+
+    printf("[mailbox]\n");
+    m->cmd_head = 5;
+    mbx_hps_init(m, MBX_FLAG_FIXED_VOL);
+    CHECK(mbx_ready(m) && m->cmd_tail == 5 && m->flags == MBX_FLAG_FIXED_VOL);
+    for (ok = 1, i = 0; i < MBX_CMD_SLOTS; i++)
+        ok &= mbx_push_cmd(m, 1 + i % 4);
+    CHECK(ok && !mbx_push_cmd(m, MBX_CMD_NEXT));
+    for (ok = 1, i = 0; i < MBX_CMD_SLOTS; i++)
+        ok &= mbx_pop_cmd(m, &c) && c == 1 + i % 4;
+    CHECK(ok && !mbx_pop_cmd(m, &c));
+
+    memset(&st, 0, sizeof(st));
+    st.state = MBX_ST_PLAYING;
+    st.track = 3;
+    st.total = 12;
+    st.duration_ms = 215000;
+    strcpy(st.title, "Cancion");
+    strcpy(st.artist, "Artista");
+    mbx_publish(m, &st);
+    CHECK(mbx_read_status(m, &rd, &seq) && seq == 2 && memcmp(&st, &rd, sizeof(st)) == 0);
+    m->seq = 3;
+    CHECK(!mbx_read_status(m, &rd, &seq));
+}
+
+/* ------------------------------------------------------------ player con audio_proc simulado */
+#define MOCK_DEPTH 4096u
+#define MOCK_LOG   200000u
+
+typedef struct {
+    uint32_t fifo[MOCK_DEPTH];
+    uint32_t head, count, ctrl, track, starved;
+    uint32_t log[MOCK_LOG];
+    uint32_t nlog;
+} mock_t;
+
+static uint32_t mk_space(void *c) { return MOCK_DEPTH - ((mock_t *)c)->count; }
+static int mk_idle(void *c) { return ((mock_t *)c)->count == 0; }
+static void mk_track(void *c, uint32_t n) { ((mock_t *)c)->track = n; }
+
+static void mk_write(void *c, const uint32_t *w, uint32_t n)
+{
+    mock_t *m = c;
+
+    while (n--) {
+        if (m->count == MOCK_DEPTH) {
+            g_fails++;
+            return;
+        }
+        m->fifo[(m->head + m->count++) % MOCK_DEPTH] = *w++;
+    }
+}
+
+static void mk_ctrl(void *c, uint32_t v)
+{
+    mock_t *m = c;
+
+    if (v & AP_CTRL_FLUSH)
+        m->count = 0;
+    m->ctrl = v & ~(AP_CTRL_FLUSH | AP_CTRL_TIME_CLR);
+}
+
+/* Avanza el tiempo simulado: el codec consume 48 muestras por ms con RUN = 1. */
+static void run_ms(player_t *p, mock_t *m, uint32_t ms)
+{
+    uint32_t t, k;
+
+    for (t = 0; t < ms; t += 2) {
+        player_poll(p);
+        for (k = 0; k < 96 && (m->ctrl & AP_CTRL_RUN); k++) {
+            if (m->count == 0) {
+                m->starved++;
+                continue;
+            }
+            if (m->nlog < MOCK_LOG)
+                m->log[m->nlog++] = m->fifo[m->head];
+            m->head = (m->head + 1) % MOCK_DEPTH;
+            m->count--;
+        }
+    }
+}
+
+static uint32_t expected(const track_t *t, uint32_t *out, uint32_t max)
+{
+    static int16_t pcm[2 * 20000];
+    resampler_t r;
+    size_t used;
+    FILE *f = fopen(t->path, "rb");
+
+    fseek(f, (long)t->info.data_offset, SEEK_SET);
+    if (fread(pcm, t->info.block_align, t->info.frames, f) != t->info.frames)
+        g_fails++;
+    fclose(f);
+    rs_init(&r, t->info.sample_rate, AP_FS_HZ, t->info.channels);
+    return (uint32_t)rs_process(&r, pcm, t->info.frames, &used, out, max);
+}
+
+static void test_player(void)
+{
+    static catalog_t cat;
+    static player_t pl;
+    static mock_t mk;
+    static uint32_t ex[3][30000];
+    uint32_t nex[3], k, i;
+    char dir[128], path[256];
+    audio_out_t out = {&mk, mk_space, mk_idle, mk_write, mk_ctrl, mk_track};
+    wspec_t w1 = {1, 1, 8000, 16, 4000, "Uno", NULL, NULL, 0, 0, 0};
+    wspec_t w2 = {1, 2, 44100, 16, 13230, "Dos", NULL, NULL, 0, 0, 0};
+    wspec_t w3 = {1, 2, 16000, 16, 3200, "Tres", NULL, NULL, 0, 0, 0};
+    int ok;
+
+    printf("[player]\n");
+    snprintf(dir, sizeof(dir), "%s/player", g_dir);
+    CHECK(mkdir(dir, 0755) == 0);
+    snprintf(path, sizeof(path), "%s/01.wav", dir); make_wav(path, &w1);
+    snprintf(path, sizeof(path), "%s/02.wav", dir); make_wav(path, &w2);
+    snprintf(path, sizeof(path), "%s/03.wav", dir); make_wav(path, &w3);
+    CHECK(catalog_load(&cat, dir) == 3);
+    for (i = 0; i < 3; i++)
+        nex[i] = expected(&cat.tracks[i], ex[i], 30000);
+
+    /* Reproduccion continua de la lista con avance automatico */
+    memset(&mk, 0, sizeof(mk));
+    player_init(&pl, &cat, &out);
+    CHECK(pl.state == MBX_ST_STOPPED && mk.track == 1);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    CHECK(pl.state == MBX_ST_PLAYING && (mk.ctrl & AP_CTRL_RUN));
+    run_ms(&pl, &mk, 3000);
+    CHECK(mk.nlog == nex[0] + nex[1] + nex[2]);
+    CHECK(memcmp(mk.log, ex[0], nex[0] * 4) == 0);
+    CHECK(memcmp(mk.log + nex[0], ex[1], nex[1] * 4) == 0);
+    CHECK(memcmp(mk.log + nex[0] + nex[1], ex[2], nex[2] * 4) == 0);
+    CHECK(pl.state == MBX_ST_STOPPED && pl.track == 0 && mk.track == 1);
+    CHECK(mk.starved <= 3 * 96);
+    printf("  lista completa: %u muestras, silencio entre pistas %u muestras (%.1f ms)\n",
+           mk.nlog, mk.starved, mk.starved / 48.0);
+
+    /* Pausa: no se consume nada y luego continua sin perder muestras */
+    memset(&mk, 0, sizeof(mk));
+    player_init(&pl, &cat, &out);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    run_ms(&pl, &mk, 100);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    k = mk.nlog;
+    CHECK(pl.state == MBX_ST_PAUSED);
+    run_ms(&pl, &mk, 200);
+    CHECK(mk.nlog == k);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    run_ms(&pl, &mk, 600);
+    CHECK(mk.nlog >= nex[0] && memcmp(mk.log, ex[0], nex[0] * 4) == 0);
+
+    /* Siguiente durante la reproduccion: vacia la FIFO y empieza la pista 2 desde su inicio */
+    memset(&mk, 0, sizeof(mk));
+    player_init(&pl, &cat, &out);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    run_ms(&pl, &mk, 60);
+    k = mk.nlog;
+    player_command(&pl, MBX_CMD_NEXT);
+    CHECK(pl.state == MBX_ST_PLAYING && pl.track == 1 && mk.track == 2);
+    run_ms(&pl, &mk, 50);
+    CHECK(mk.nlog > k && memcmp(mk.log + k, ex[1], (mk.nlog - k) * 4) == 0);
+
+    /* Stop y play: vuelve al inicio de la misma pista */
+    player_command(&pl, MBX_CMD_STOP);
+    CHECK(pl.state == MBX_ST_STOPPED && mk.count == 0 && !(mk.ctrl & AP_CTRL_RUN) && pl.track == 1);
+    k = mk.nlog;
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    run_ms(&pl, &mk, 30);
+    CHECK(mk.nlog > k && memcmp(mk.log + k, ex[1], (mk.nlog - k) * 4) == 0);
+
+    /* Navegacion circular sin reproducir y pausa + siguiente */
+    memset(&mk, 0, sizeof(mk));
+    player_init(&pl, &cat, &out);
+    player_command(&pl, MBX_CMD_PREV);
+    CHECK(pl.state == MBX_ST_STOPPED && pl.track == 2 && mk.track == 3);
+    player_command(&pl, MBX_CMD_NEXT);
+    CHECK(pl.state == MBX_ST_STOPPED && pl.track == 0 && mk.track == 1);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    player_command(&pl, MBX_CMD_PLAY_PAUSE);
+    player_command(&pl, MBX_CMD_NEXT);
+    CHECK(pl.state == MBX_ST_STOPPED && pl.track == 1 && mk.count == 0);
+
+    /* Estado publicado */
+    {
+        mbx_status_t st;
+
+        player_status(&pl, &st);
+        ok = st.track == 1 && st.total == 3 && strcmp(st.title, "Dos") == 0 &&
+             strcmp(st.artist, CATALOG_NO_ARTIST) == 0 && st.sample_rate == 44100 && st.duration_ms == 300;
+        CHECK(ok);
+    }
+    player_close(&pl);
+}
+
 int main(void)
 {
     char cmd[128];
@@ -289,6 +494,8 @@ int main(void)
     test_wav();
     test_catalog();
     test_resampler();
+    test_mailbox();
+    test_player();
     snprintf(cmd, sizeof(cmd), "rm -rf %s", g_dir);
     if (system(cmd) != 0)
         fprintf(stderr, "no se pudo borrar %s\n", g_dir);
