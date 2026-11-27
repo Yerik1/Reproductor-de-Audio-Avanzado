@@ -1,0 +1,22 @@
+Fecha: 2026-11-26 16:09:43 -0600
+Simulador: Icarus Verilog version 12.0 (stable) ()
+=== tb_audio_proc: FIFO_DEPTH=64 FS_HZ=8 N=1024 ===
+-- registros
+-- FIFO llena y OVERFLOW
+-- pista en HEX5..HEX4 y HEX_EN
+-- seleccion de filtro por switches
+-- casos de filtrado
+caso 0: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 1: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 2: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 3: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 4: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 5: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 6: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+caso 7: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+-- programacion de coeficientes (banco 3)
+caso 8: 1024/1024 muestras coinciden, salida 1024/1024, tiempo 02:08
+-- ciclos con las FIFOs del Audio Core llenas (contrapresion ejercitada): 1507772
+=== RESUMEN: 90 verificaciones, 0 fallas, 0 errores de protocolo Avalon-MM del maestro ===
+RESULTADO: PASS
+tb_audio_proc.v:310: $finish called at 54542030000 (1ps)
