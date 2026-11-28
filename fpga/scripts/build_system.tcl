@@ -1,6 +1,6 @@
-# Sistema Platform Designer del reproductor: etapa 1 (Nios V/m + audio_proc + audio + ADC).
-# Parametros de los IP de University Program tomados de los scripts de FPGAcademy para la
-# DE1-SoC (Design_Examples/Computer_Systems/common/scripts).
+# Sistema Platform Designer del reproductor: Nios V/m, HPS, audio_proc, audio, ADC y buzon.
+# Parametros de los IP de University Program y del HPS tomados de los scripts de FPGAcademy
+# para la DE1-SoC (Design_Examples/Computer_Systems: common.tcl y gen_arm_niosii_computer_system.tcl).
 # Uso (desde fpga/quartus): qsys-script --script=../scripts/build_system.tcl --search-path="../ip/**/*,$"
 package require -exact qsys 15.0
 
@@ -21,6 +21,84 @@ proc connect_irq {receiver sender number} {
 proc clock_and_reset {instance clk_if reset_if} {
     add_connection clk_50.clk       $instance.$clk_if
     add_connection clk_50.clk_reset $instance.$reset_if
+}
+
+# Configuracion del HPS para la DE1-SoC (DDR3 Micron, perifericos en HPS I/O Set 0)
+proc add_hps {name} {
+    set_instance_parameter_value $name CTL_ENABLE_BURST_INTERRUPT         true
+    set_instance_parameter_value $name CTL_ENABLE_BURST_TERMINATE         true
+    set_instance_parameter_value $name EMAC1_Mode                         "RGMII"
+    set_instance_parameter_value $name EMAC1_PinMuxing                    "HPS I/O Set 0"
+    set_instance_parameter_value $name F2SCLK_COLDRST_Enable              false
+    set_instance_parameter_value $name F2SCLK_DBGRST_Enable               false
+    set_instance_parameter_value $name F2SCLK_WARMRST_Enable              false
+    set_instance_parameter_value $name F2SDRAM_Type                       ""
+    set_instance_parameter_value $name F2SDRAM_Width                      ""
+    set_instance_parameter_value $name F2SINTERRUPT_Enable                true
+    set_instance_parameter_value $name FPGA_PERIPHERAL_OUTPUT_CLOCK_FREQ_EMAC0_GTX_CLK 100.0
+    set_instance_parameter_value $name FPGA_PERIPHERAL_OUTPUT_CLOCK_FREQ_EMAC1_GTX_CLK 100.0
+    set_instance_parameter_value $name FPGA_PERIPHERAL_OUTPUT_CLOCK_FREQ_EMAC0_MD_CLK 100.0
+    set_instance_parameter_value $name FPGA_PERIPHERAL_OUTPUT_CLOCK_FREQ_EMAC1_MD_CLK 100.0
+    set_instance_parameter_value $name I2C0_Mode                          "I2C"
+    set_instance_parameter_value $name I2C0_PinMuxing                     "HPS I/O Set 0"
+    set_instance_parameter_value $name I2C1_Mode                          "I2C"
+    set_instance_parameter_value $name I2C1_PinMuxing                     "HPS I/O Set 0"
+    set_instance_parameter_value $name MAX_PENDING_RD_CMD                 16
+    set_instance_parameter_value $name MAX_PENDING_WR_CMD                 8
+    set_instance_parameter_value $name MEM_CLK_FREQ                       400.0
+    set_instance_parameter_value $name MEM_CLK_FREQ_MAX                   800.0
+    set_instance_parameter_value $name MEM_COL_ADDR_WIDTH                 10
+    set_instance_parameter_value $name MEM_DQ_WIDTH                       32
+    set_instance_parameter_value $name MEM_DRV_STR                        "RZQ/6"
+    set_instance_parameter_value $name MEM_ROW_ADDR_WIDTH                 15
+    set_instance_parameter_value $name MEM_RTT_NOM                        "RZQ/6"
+    set_instance_parameter_value $name MEM_RTT_WR                         "Dynamic ODT off"
+    set_instance_parameter_value $name MEM_TINIT_US                       500
+    set_instance_parameter_value $name MEM_TMRD_CK                        4
+    set_instance_parameter_value $name MEM_TREFI_US                       7.8
+    set_instance_parameter_value $name MEM_TWTR                           4
+    set_instance_parameter_value $name MEM_WTCL                           7
+    set_instance_parameter_value $name MPU_EVENTS_Enable                  false
+    set_instance_parameter_value $name REF_CLK_FREQ                       25
+    set_instance_parameter_value $name SDIO_Mode                          "4-bit Data"
+    set_instance_parameter_value $name SDIO_PinMuxing                     "HPS I/O Set 0"
+    set_instance_parameter_value $name SPIM1_Mode                         "Single Slave Select"
+    set_instance_parameter_value $name SPIM1_PinMuxing                    "HPS I/O Set 0"
+    set_instance_parameter_value $name STM_Enable                         true
+    set_instance_parameter_value $name UART0_Mode                         "No Flow Control"
+    set_instance_parameter_value $name UART0_PinMuxing                    "HPS I/O Set 0"
+    set_instance_parameter_value $name USB1_Mode                          "SDR"
+    set_instance_parameter_value $name USB1_PinMuxing                     "HPS I/O Set 0"
+    set_instance_parameter_value $name desired_mpu_clk_mhz                800.0
+    set_instance_parameter_value $name use_default_mpu_clk                true
+    set_instance_parameter_value $name GPIO_Enable                        [list No No No No No No No No No Yes No No No No No No No No No No No No No No No No No No No No No No No No No Yes No No No No Yes Yes No No No No No No Yes No No No No Yes Yes No No No No No No Yes No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No No]
+    set_instance_parameter_value $name MEM_TCL                            7
+    set_instance_parameter_value $name MEM_TFAW_NS                        45.0
+    set_instance_parameter_value $name MEM_TRAS_NS                        36.0
+    set_instance_parameter_value $name MEM_TRCD_NS                        13.125
+    set_instance_parameter_value $name MEM_TRFC_NS                        300.0
+    set_instance_parameter_value $name MEM_TRP_NS                         13.125
+    set_instance_parameter_value $name MEM_VENDOR                         "Micron"
+    set_instance_parameter_value $name QSPI_Mode                          "1 SS"
+    set_instance_parameter_value $name QSPI_PinMuxing                     "HPS I/O Set 0"
+    set_instance_parameter_value $name S2F_Width                          3
+    set_instance_parameter_value $name TIMING_BOARD_AC_SKEW               0.02
+    set_instance_parameter_value $name TIMING_BOARD_AC_TO_CK_SKEW         0.01
+    set_instance_parameter_value $name TIMING_BOARD_DQ_TO_DQS_SKEW        0.05
+    set_instance_parameter_value $name TIMING_BOARD_MAX_CK_DELAY          0.03
+    set_instance_parameter_value $name TIMING_BOARD_MAX_DQS_DELAY         0.02
+    set_instance_parameter_value $name TIMING_BOARD_SKEW_BETWEEN_DIMMS    0.05
+    set_instance_parameter_value $name TIMING_BOARD_SKEW_BETWEEN_DQS      0.06
+    set_instance_parameter_value $name TIMING_BOARD_SKEW_CKDQS_DIMM_MAX   0.12
+    set_instance_parameter_value $name TIMING_BOARD_SKEW_CKDQS_DIMM_MIN   0.06
+    set_instance_parameter_value $name TIMING_BOARD_SKEW_WITHIN_DQS       0.01
+    set_instance_parameter_value $name TIMING_TDH                         65
+    set_instance_parameter_value $name TIMING_TDQSCK                      255
+    set_instance_parameter_value $name TIMING_TDQSQ                       125
+    set_instance_parameter_value $name TIMING_TDS                         30
+    set_instance_parameter_value $name TIMING_TIH                         140
+    set_instance_parameter_value $name TIMING_TIS                         190
+    set_instance_parameter_value $name TIMING_TQSH                        0.4
 }
 
 # ---------------------------------------------------------------- reloj de sistema 50 MHz
@@ -124,5 +202,26 @@ if {[lsearch [get_instance_parameters adc] board_rev] >= 0} {
 clock_and_reset adc clk reset
 set_interface_property adc EXPORT_OF adc.external_interface
 connect_agent cpu.data_manager adc.adc_slave 0xFF204000
+
+# ---------------------------------------------------------------- buzon HPS <-> Nios V (4 KB)
+add_instance mailbox altera_avalon_onchip_memory2
+set_instance_parameter_value mailbox memorySize           4096
+set_instance_parameter_value mailbox dualPort             false
+set_instance_parameter_value mailbox singleClockOperation true
+set_instance_parameter_value mailbox initMemContent       false
+clock_and_reset mailbox clk1 reset1
+connect_agent cpu.data_manager mailbox.s1 0xFF210000
+
+# ---------------------------------------------------------------- HPS: puente LW hacia audio_proc y el buzon
+# h2f_reset no se conecta: la FPGA funciona aunque el HPS no haya arrancado.
+add_instance hps_0 altera_hps
+add_hps hps_0
+set_interface_property memory EXPORT_OF hps_0.memory
+set_interface_property hps_io EXPORT_OF hps_0.hps_io
+add_connection clk_50.clk hps_0.h2f_axi_clock
+add_connection clk_50.clk hps_0.f2h_axi_clock
+add_connection clk_50.clk hps_0.h2f_lw_axi_clock
+connect_agent hps_0.h2f_lw_axi_master audio_proc_0.s0 0x00000
+connect_agent hps_0.h2f_lw_axi_master mailbox.s1      0x10000
 
 save_system reproductor_soc.qsys

@@ -6,7 +6,7 @@ Proyecto II de CE-1113 Sistemas Empotrados, Instituto Tecnológico de Costa Rica
 
 ## Arquitectura
 
-Partición hardware/software y justificación: [docs/arquitectura.md](docs/arquitectura.md). Registros y secuencias de uso: [docs/mapa-registros.md](docs/mapa-registros.md).
+Partición hardware/software y justificación: [docs/arquitectura.md](docs/arquitectura.md). Registros y secuencias de uso: [docs/mapa-registros.md](docs/mapa-registros.md). Software, máquina de estados y buzón: [docs/diseno-software.md](docs/diseno-software.md).
 
 ```mermaid
 flowchart LR
@@ -46,7 +46,8 @@ Resultados y casos: [docs/verificacion/audio_proc.md](docs/verificacion/audio_pr
 ## Software del HPS
 
 ```bash
-cd sw && make test
+cd sw && make test      # pruebas en PC
+cd sw && make arm       # binario estático del HPS: sw/build-arm/reproductor
 ```
 
 Canciones para la SD (WAV PCM 16 bits con metadatos LIST/INFO):
@@ -65,3 +66,27 @@ source ~/taller09/scripts/env.sh          # PATH de Quartus, Questa y Nios V
 fpga/scripts/build_fpga.sh todo           # genera el sistema, compila y programa
 sw/niosv/build.sh bringup descargar       # compila, descarga y abre la consola del Nios V
 ```
+
+## Ejecutar en la placa
+
+Imagen de la microSD: Linux Console de Terasic para la DE1-SoC (`DE1_SoC_SD.img`, kernel 3.12). El programa y las canciones van en `/home/root`, dentro de la partición ext3.
+
+```bash
+# PC con Linux, con la microSD en /dev/sdX
+unzip -p DE1_SoC_SD.zip DE1_SoC_SD.img | sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
+sudo mount /dev/sdX2 /mnt
+sudo mkdir -p /mnt/home/root/musica
+sudo cp sd_prueba/*.wav /mnt/home/root/musica/ && sudo cp sw/build-arm/reproductor /mnt/home/root/
+sudo umount /mnt
+```
+
+Consola serie por el puerto UART to USB a 115200 baudios, usuario `root`. El orden importa porque programar la FPGA reinicia el buzón:
+
+```bash
+fpga/scripts/build_fpga.sh programar                     # PC: FPGA por JTAG
+echo 1 > /sys/class/fpga-bridge/lwhps2fpga/enable         # placa: habilita el puente HPS-FPGA liviano
+cd /home/root && ./reproductor -d /home/root/musica      # placa: -f para volumen fijo
+sw/niosv/build.sh control descargar                      # PC: control del Nios V
+```
+
+Botones: KEY3 anterior, KEY2 stop, KEY1 reproducir/pausa, KEY0 siguiente. SW1..SW0 seleccionan el filtro y el potenciómetro en ADC_IN0 controla el volumen.

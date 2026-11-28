@@ -16,8 +16,9 @@ sistema() {
 compilar() {
     quartus_sh --flow compile reproductor > logs/quartus.log 2>&1 || { grep -E "^Error" logs/quartus.log | head -20; exit 1; }
     grep -E "Critical Warning" logs/quartus.log | head -10 || true
-    grep -A3 -E "^; Fitter Status|^; Logic utilization|^; Total block memory bits|^; Total DSP Blocks" \
+    grep -E "Fitter Status|Logic utilization|Total registers|Total block memory bits|Total RAM Blocks|Total DSP Blocks" \
         output_files/reproductor.fit.summary || true
+    grep -m1 -A0 "Worst-case Slack" output_files/reproductor.sta.rpt | tr -s ' ' || true
 }
 
 programar() {
