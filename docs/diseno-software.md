@@ -70,6 +70,30 @@ Cada lado escribe solo sus campos, así que no se necesitan bloqueos entre proce
 
 La ISR del Nios V lee y limpia el registro de edge capture del PIO, cuenta el evento y guarda `mtime`. El lazo principal envía el comando y, cuando el HPS lo consume, imprime la latencia (CTL-02). Los botones de la DE1-SoC tienen antirrebote por Schmitt trigger en la placa.
 
+## Volumen (VOL-01, VOL-02)
+
+| Elemento | Valor |
+|---|---|
+| Conexión | Potenciómetro entre VCC5 (pin 1 del header 2x5) y GND (pin 10); cursor en ADC_IN0 (pin 2) |
+| Lectura | Canal CH0 del ADC Controller (`0xFF204000`) en auto-actualización, 12 bits, 0–5 V |
+| Calibración medida en la placa | 0 en un extremo y 4095 en el otro: se usa el rango completo sin corrección |
+| Ganancia | `VOLUME = v² / 512` en Q1.15: 0 → silencio, 4095 → `0x7FF0` (0,9995) |
+| Volumen fijo | Con `reproductor -f` el HPS activa `MBX_FLAG_FIXED_VOL` y el Nios V escribe `0x8000` |
+
+La curva cuadrática da más resolución en volúmenes bajos, donde el oído distingue cambios pequeños. La ganancia nunca supera 1 y `audio_proc` satura el producto, así que el volumen no introduce recorte.
+
+## Memoria utilizada (AUD-02)
+
+| Recurso | Tamaño | Uso |
+|---|---|---|
+| FIFO de `audio_proc` | 4096 × 32 bits (16 KB, M10K) | 85 ms de audio a 48 kHz entre escrituras del HPS |
+| Buzón | 4 KB en la FPGA, 304 B usados (`mailbox_t`) | Comandos y estado HPS ↔ Nios V |
+| RAM del Nios V | 256 KB en la FPGA | Programa `control` y su pila |
+| Memoria de bloques total (reporte de Quartus) | 2 292 736 bits (56 %), 286 de 397 bloques M10K (72 %) | Incluye las tres anteriores y los coeficientes FIR |
+| `reproductor` (`arm-linux-gnueabihf-size`) | 342 KB de código, 13 KB de datos, 69 KB de `bss` | Binario estático, sin dependencias de la imagen |
+| `catalog_t` | 30 472 B | Hasta 64 pistas con ruta y metadatos |
+| `player_t` | 28 808 B | Bloque de lectura de 1024 tramas y salida remuestreada |
+
 ## Restricciones del profesor
 
 - HAL solo para interrupciones: `alt_ic_isr_register` en el Nios V; ningún otro `alt_*`.

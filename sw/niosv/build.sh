@@ -10,7 +10,7 @@ SOPC=$(find "$ROOT/fpga/quartus" -maxdepth 2 -name reproductor_soc.sopcinfo | he
 B="$ROOT/sw/niosv/build/$APP"
 rm -rf "$B"
 mkdir -p "$B/src"
-cp "$ROOT/sw/niosv/$APP"/*.[ch] "$ROOT/sw/src/audio_proc_regs.h" "$B/src/"
+cp "$ROOT/sw/niosv/$APP"/*.[ch] "$ROOT/sw/src/audio_proc_regs.h" "$ROOT/sw/src/mailbox.h" "$ROOT/sw/src/mailbox.c" "$B/src/"
 niosv-bsp --create --type=hal --sopcinfo="$SOPC" "$B/bsp/settings.bsp"
 niosv-app --app-dir="$B/app" --bsp-dir="$B/bsp" --srcs="$B/src"
 cmake -G "Unix Makefiles" -S "$B/app" -B "$B/app/build"

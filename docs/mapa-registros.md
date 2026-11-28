@@ -1,23 +1,23 @@
 # Mapa de memoria y contrato HW/SW
 
-**Issue:** ARC-03 · **Estado:** registros de `audio_proc` verificados en simulación; mapa generado por [`fpga/scripts/build_system.tcl`](../fpga/scripts/build_system.tcl).
+**Issue:** ARC-03 · **Estado:** registros de `audio_proc` verificados en simulación y en la placa desde el HPS y el Nios V; mapa generado por [`fpga/scripts/build_system.tcl`](../fpga/scripts/build_system.tcl).
 
 ## Mapa de memoria
 
-Las direcciones son las mismas para el Nios V y para el HPS: el puente LW del HPS empieza en `0xFF200000`. Se conservan las direcciones del DE1-SoC Computer de FPGAcademy para los periféricos de University Program.
+Las direcciones son las mismas para el Nios V y para el HPS: el puente LW del HPS empieza en `0xFF200000`, así que el HPS ve `audio_proc_0` en el offset `0x00000` y `mailbox` en `0x10000` de su ventana. Se conservan las direcciones del DE1-SoC Computer de FPGAcademy para los periféricos de University Program.
 
 | Componente | Dirección | Tamaño | Maestros | IRQ Nios V | Función |
 |---|---|---|---|---|---|
 | `ram` | `0x00000000` | 256 KB | Nios V | — | Programa y datos del Nios V |
 | `cpu.dm_agent` | `0x0A000000` | — | Nios V | — | Módulo de depuración |
-| `audio_proc_0` | `0xFF200000` | 64 B | Nios V, HPS (etapa 2) | — | Muestras, filtros, volumen, tiempo y 7 segmentos |
+| `audio_proc_0` | `0xFF200000` | 64 B | Nios V, HPS | — | Muestras, filtros, volumen, tiempo y 7 segmentos |
 | `key_pio` | `0xFF200050` | 16 B | Nios V | 2 | KEY3..KEY0, flanco de subida de `~KEY` (al presionar) |
 | `jtag_uart` | `0xFF201000` | 8 B | Nios V | 8 | Consola de depuración |
 | `cpu.timer_sw_agent` | `0xFF202100` | 16 B | Nios V | — | `mtime`, `mtimecmp`, `msip` |
 | `av_config` | `0xFF203000` | 16 B | Nios V | — | Configuración I2C del WM8731 (48 kHz, 32 bits) |
 | `audio` | `0xFF203040` | 16 B | Nios V, `audio_proc_0.m0` | — | Audio Core: `CONTROL`, `FIFOSPACE`, `LEFTDATA`, `RIGHTDATA` |
 | `adc` | `0xFF204000` | 32 B | Nios V | — | ADC de 8 canales; potenciómetro en CH0 |
-| Buzón HPS ↔ Nios V | por definir (etapa 2) | — | Nios V, HPS | — | Comandos y metadatos |
+| `mailbox` | `0xFF210000` | 4 KB | Nios V, HPS | — | Buzón: comandos y estado del reproductor ([`sw/src/mailbox.h`](../sw/src/mailbox.h)) |
 | Pantalla externa | por definir (etapa 3) | — | Nios V | — | UI-02 |
 
 ## Registros de `audio_proc`
